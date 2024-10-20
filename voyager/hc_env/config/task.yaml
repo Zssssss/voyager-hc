@@ -1,0 +1,99 @@
+task_name: '东海SQ' # 任务名字
+prod: True # True:生产环境 False:开发环境
+submarine_nums: 2
+sub_name: ['大鲸级潜艇', "苍龙级潜艇"]
+sub_vel: 4 #潜艇初始速度，单位节
+sub_height: -50 #潜艇初始深度，单位m
+blue_patrol_ship_nums: 2 #蓝方巡逻舰数量
+blue_patrol_ship_vel: 20 #蓝方巡逻舰速度
+blue_patrol_ship_name: "均轻级巡逻舰"
+blue_destroyer_nums: 4 #蓝方驱逐舰数量
+blue_destroyer_vel: 30 #蓝方驱逐舰速度
+blue_destroyer_name: ["墨耶级宙斯盾驱逐舰", "最上级通用驱逐舰", "最上级通用驱逐舰", "初学级通用驱逐舰"]
+blue_P1_plane_nums: 1 #P1飞机数量
+blue_P1_plane_vel: 800 #P1飞机速度
+blue_P1_plane_height: 800 #P1飞机高度
+blue_P1_plane_name: "P-1飞机"
+blue_F15_plane_nums: 3 #F15飞机数量
+blue_F15_plane_name: "F-15飞机"
+blue_Elec_plane_nums: 3 #电子战飞机数量
+blue_Elec_plane_name: "电子战飞机"
+
+
+
+uav_nums: 4
+uav_name: '无人机'
+uav_height: 200 #无人机初始高度，单位m
+uav_vel: 400 #无人机初始速度，单位km/h
+usv_nums: 4
+buoy_nums: {"passive":40, "active":10}
+usv_name: '无人艇'
+usv_vel: 8 #无人艇初始速度，单位节
+plane_nums: 2
+plane_name: '运九反潜飞机'
+plane_vel: 400 #运九反潜飞机初始速度，单位km/h
+plane_height: 150 #运九反潜飞机初始高度，单位m
+red_sub_nums: 2 #红方潜艇
+red_sub_name: '039C潜艇'
+red_sub_vel: 6 #红方潜艇初始速度，单位节
+red_sub_height: -50 #红方潜艇初始深度，单位m
+red_frigate_nums: 4
+red_frigate_name: ['052D护卫舰', '054B护卫舰', '052D护卫舰', '054B护卫舰']
+red_frigate_vel: 35
+red_maritime_ship_nums: 2 #海警船
+red_maritime_ship_name: '818型海警船'
+red_maritime_ship_vel: 28
+red_J20_nums: 3 #歼20飞机
+red_J20_name: '歼20飞机'
+red_H6_nums: 3 #轰六飞机
+red_H6_name: '轰六飞机'
+red_Elec_plane_nums: 3 #电子战飞机数量
+red_Elec_plane_name: "电子战飞机"
+
+
+
+
+
+#无人艇、无人机任务海域分配
+search_area_width: 92600 # 50 * 1.852 * 1000 单位米
+search_area_height: 148160 # 80 * 1.852 * 1000
+uav_area_width: 46300 #25 * 1.852 * 1000
+uav_area_height: 46300 #25 * 1.852 * 1000
+usv_area_width: 46300 #25 * 1.852 * 1000
+usv_area_height: 27780 #15 * 1.852 * 1000
+
+#关键经纬度信息
+Diaoyu: {"lat": 25.74333, "lon": 123.47333} #钓鱼岛经纬度
+Huangwei: {"lat": 25.9233, "lon": 123.6817} #黄尾屿经纬度
+Nanxiao: {"lat": 25.7233, "lon": 123.5500} #南小岛经纬度
+Chiwei: {"lat": 25.9222, "lon": 124.5617} #赤尾岛经纬度
+red_airport: {"lat": 27.75, "lon": 121.4167} #中国南麂列岛建军用机场 距钓鱼岛300公里
+blue_airport: {"lat": 32.9168027, "lon": 129.918870} #中国南麂列岛建军用机场 距钓鱼岛300公里
+battle_field: {"min_lat": 24.734347469, "max_lat": 28.255261522, "min_lon": 120.848712116,
+                             "max_lon": 126.978976713} #战斗区域
+
+#推演时间
+Inference_time: 12 #推演时间 单位:小时
+
+# 上报信息误差
+error_dis: 1500 # 经纬度估计误差 单位:米
+error_course: 20 # 航向角估计误差 单位:度
+error_vel: 3 # 速度估计误差 单位:节
+sub_target_dis : 2000 #潜艇距离目标距离判断其到达 单位:米
+acc: 0.7 # 上报平均准确率
+
+#跃变层位置
+thermocline: -90
+blue_drag_sonar: 100_000 #蓝方拖曳声呐最大探测范围
+blue_sonar: 10_000 #蓝方舰壳声呐最大探测范围
+periscope_range: 10_000 #潜望镜最大探测范围
+
+sonar_update_times: 30 #声呐更新频率 单位:秒
+
+
+
+# 上报信息
+
+
+
+

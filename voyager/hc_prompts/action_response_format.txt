@@ -1,0 +1,55 @@
+Explain: ...
+Plan:
+1) ...
+2) ...
+3) ...
+...
+Code:
+```python
+// main function after the helper functions
+def yourMainFunctionName(Observation):
+  
+  // helper functions (only if needed, try to avoid them)
+  ...
+
+  res = []
+  // ...
+  return res
+```
+
+Notice:
+  1)the input must be only Observation and fixed which is the content of given Observation above, that is to say, the formation of function is like 'def function(Observation)'.
+  2)the value of params needed from outer object in function should be got in dict format such as Observation['red_obs']['simtime'], which represpents current time and red_obs means our side's state.
+  3)the return of fucntion must be a specified list.
+  4)the rear of the list must be Env_Step to let environment step at least once.
+  5)Only generate one function, if helper function needed, please generate it in the main functino body.
+Here are some good code examples:
+```python
+def flyToPositionWithOnlyLatLonAndSwitchOnInfrared(Observation):
+  //set return list
+  res = []
+  
+  //get params needed from Observation
+  try:
+    target_lat, target_lon = Observation['report']['lat'], Observation['report']['lon']
+    assert target_lat is not None and target_lon is not None
+    assert target_lat != '' and target_lon != ''
+  except Exception as e:
+    raise ValueError(f"current Observation has not correspond value: {e}")
+  
+  //set extra params needed 
+  time, status = 2, 1
+
+  //call move_control method
+  res += move_control(target_lat,target_lon)
+  
+  //call switch_infrared method
+  res += switch_infrared(status)
+
+  //send the command and signal the environment to run for t seconds
+  for _ in range(t):
+    res += [Env_Step()]
+  
+  return res
+```
+
