@@ -79,25 +79,55 @@ def obj_to_dict(obj):
         return obj
 
 
+
 class EnvBridge:
 
     def __init__(self):
         self.env = EnvTest(args, 1, 1)
         self.key_obs = []
         
-
-    def step(self, action_cmds):   
+        self.blue_agent = SubDecision()  ###陪练智能体
         
-        self.pre_obs = self.current_obs
 
+    def step(self, action_cmds):     ###传进来的是llm智能体的控制命令，目前在这里额外加上陪练智能体的控制命令发给环境
+        
+        commands = {
+            "red_cmds": [],
+            "blue_cmds": []
+        }
+
+        now_obs = self.key_obs[-1]
+        flag = False
         while len(action_cmds) != 0:
             p = 0
             while "env_forward_t" not in action_cmds[p].keys():
                 p += 1
-            nxt_obs, nxt_result = self.env.step(action_cmds[:p+1])
+
+            sub_cmds, _, _, _ = self.blue_agent.make_decision(now_obs[-1]['blue_obs'])
+            commands["blue_cmds"] = sub_cmds
+            commands['red_cmds'] = action_cmds[:p+1]
+
+            nxt_obs, nxt_result = self.env.step(commands)
+
+            if nxt_result in [Result.RED_WIN, Result.BLUE_WIN]: 
+                if nxt_result == Result.RED_WIN:
+                    return "red agent win, task success !"
+                else:
+                    return "task failed"          #####记得环境中能返回失败原因的，后续可改进
+            flag = True
+
+            now_obs, commands = nxt_obs, {"red_cmds": [],"blue_cmds": []}
+
+            if p+1 > len(action_cmds):
+                break
             action_cmds = action_cmds[p+1:]
+
+        if not flag:
+            return 'invalid commands, environment should move forward at least once.'
+        
         last_obs, last_result = nxt_obs, nxt_result
         self.key_obs.append(obj_to_dict(last_obs))
+
         # return last_obs, last_result
         return "generated code execute success"
 
@@ -105,6 +135,7 @@ class EnvBridge:
     def backward(self):
         self.key_obs.pop()
         self.setbystate(self.key_obs[-1])
+        return "environment rollback success."
 
     def setbystate(self,state_dict):
         return self.env.setbystate(state_dict)

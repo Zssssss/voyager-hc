@@ -1,12 +1,11 @@
 import os
 
 import voyager.utils as U
-from langchain.schema import HumanMessage, SystemMessage
 from langchain_community.vectorstores import Chroma
 
 from voyager.hc_prompts import load_prompt
 from voyager.hc_control_primitives import load_control_primitives
-from mistral_common.protocol.instruct.messages import UserMessage, UserMessage, SystemMessage, AssistantMessage
+from mistral_common.protocol.instruct.messages import UserMessage, SystemMessage, AssistantMessage
 
 class SkillManager:
     def __init__(
@@ -104,7 +103,7 @@ class SkillManager:
     def generate_skill_description(self, program_name, program_code):
         messages = [
             SystemMessage(content=load_prompt("skill")),
-            HumanMessage(
+            UserMessage(
                 content=program_code
                 + "\n\n"
                 + f"The main function is `{program_name}`."

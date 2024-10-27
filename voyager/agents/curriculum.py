@@ -7,10 +7,8 @@ import voyager.utils as U
 from voyager.hc_prompts import load_prompt
 from voyager.utils.json_utils import fix_and_parse_json
 
-
-from langchain.schema import HumanMessage, SystemMessage
 from langchain.vectorstores import Chroma
-from mistral_common.protocol.instruct.messages import UserMessage, UserMessage, SystemMessage, AssistantMessage
+from mistral_common.protocol.instruct.messages import UserMessage, SystemMessage, AssistantMessage
 
 class CurriculumAgent:
     def __init__(
@@ -129,53 +127,51 @@ class CurriculumAgent:
         assert isinstance(system_message, SystemMessage)
         return system_message
 
-    def render_observation(self, *, obs):
+    def render_observation(self, *, obs):           
 
-        observation = json.dumps(obs)
+        temp_observation = json.dumps(obs)
 
         completed_tasks = (
             ", ".join(self.completed_tasks) if self.completed_tasks else "None"
         )
         failed_tasks = ", ".join(self.failed_tasks) if self.failed_tasks else "None"
 
-        observation = {
+        observation = {                                                             
             "context": "",
-            "observations": f"Observation(The current state that can be seen, which is given in json format such as {{key:value}}：\n###"+f"{biome}\n###\n\n",
+            "observations": f"Observation(The current state that can be seen, which is given in json format such as {{key:value}}：\n###"+f"{temp_observation}\n###\n\n",
             "completed_tasks": f"Completed tasks so far: {completed_tasks}\n\n",
             "failed_tasks": f"Failed tasks that are too hard: {failed_tasks}\n\n",
         }
         return observation
 
-    def render_human_message(self, *, obs):
-        content = ""
-        observation = self.render_observation(obs=obs)
-        if self.progress >= self.warm_up["context"]:
-            questions, answers = self.run_qa(
-                events=events, chest_observation=chest_observation
-            )
-            i = 1
-            for question, answer in zip(questions, answers):
-                if "Answer: Unknown" in answer or "language model" in answer:
-                    continue
-                observation["context"] += f"Question {i}: {question}\n"
-                observation["context"] += f"{answer}\n\n"
-                i += 1
-                if i > 5:
-                    break
+    def render_human_message(self, *, obs, last_task, last_task_critique):
+        content = "" if last_task == '' else 'last proposed task: {} failed, and the last task citique is {} which you should pay much attention to reconstruct a better subtask.\n\n'.format(last_task,last_task_critique)
+        observation = self.render_observation(obs=obs) 
+        # if self.progress >= self.warm_up["context"]:
+        questions, answers = self.run_qa(cur_obs=obs)
+        i = 1
+        for question, answer in zip(questions, answers):
+            if "Answer: Unknown" in answer or "language model" in answer:
+                continue
+            observation["context"] += f"Question {i}: {question}\n"
+            observation["context"] += f"{answer}\n\n"
+            i += 1
+            if i > 5:
+                break
 
-        for key in self.curriculum_observations:
-            if self.progress >= self.warm_up[key]:
-                if self.warm_up[key] != 0:
-                    should_include = random.random() < 0.8
-                else:
-                    should_include = True
-                if should_include:
-                    content += observation[key]
+        # for key in self.curriculum_observations:
+        #     if self.progress >= self.warm_up[key]:
+        #         if self.warm_up[key] != 0:
+        #             should_include = random.random() < 0.8
+        #         else:
+        #             should_include = True
+        #         if should_include:
+        #             content += observation[key]
 
         print(f"\033[35m****Curriculum Agent human message****\n{content}\033[0m")
-        return HumanMessage(content=content)
+        return UserMessage(content=content)
 
-    def propose_next_task(self, *, obs, max_retries=5):
+    def propose_next_task(self, *, obs, lask_task_critique, last_task):
         if self.progress == 0 and self.mode == "auto":
             task = "Fly to the target location."
             context = "You can fly around suspected targets to drop buoy formations and gather information with a variety of sensors."
@@ -186,12 +182,14 @@ class CurriculumAgent:
             self.render_system_message(),
             self.render_human_message(
                 obs=obs,
+                last_task=last_task,
+                lask_task_critique=lask_task_critique
             ),
         ]
 
         if self.mode == "auto":
-            return self.propose_next_ai_task(messages=messages, max_retries=max_retries)
-        elif self.mode == "manual":
+            return self.propose_next_ai_task(messages=messages)      ###这个逻辑还没改太好，TODO
+        elif self.mode == "manual":       ###人工干预的还没改, 后续看看怎么改模板，要不要也加critique或者其他优化方式s, TODO
             return self.propose_next_manual_task()
         else:
             raise ValueError(f"Invalid curriculum agent mode: {self.mode}")
@@ -272,7 +270,7 @@ class CurriculumAgent:
                 content=load_prompt("curriculum_task_decomposition"),
             ),
             self.render_human_message(events=events, chest_observation=""),
-            HumanMessage(content=f"Final task: {task}"),
+            UserMessage(content=f"Final task: {task}"),
         ]
         print(
             f"\033[31m****Curriculum Agent task decomposition****\nFinal task: {task}\033[0m"
@@ -282,10 +280,8 @@ class CurriculumAgent:
         print(f"\033[31m****Curriculum Agent task decomposition****\n{response}\033[0m")
         return fix_and_parse_json(response)
 
-    def run_qa(self, *, events, chest_observation):
-        questions_new, _ = self.run_qa_step1_ask_questions(
-            events=events, chest_observation=chest_observation
-        )
+    def run_qa(self, *, cur_obs):
+        questions_new, _ = self.run_qa_step1_ask_questions(cur_obs=cur_obs)
         questions = []
         answers = []
         for question in questions_new:
@@ -344,20 +340,19 @@ class CurriculumAgent:
         content = ""
         for key in self.curriculum_observations:
             content += observation[key]
-        return HumanMessage(content=content)
+        return UserMessage(content=content)
 
-    def run_qa_step1_ask_questions(self, *, events, chest_observation):
-        biome = events[-1][1]["status"]["biome"].replace("_", " ")
+    def run_qa_step1_ask_questions(self, *, cur_obs):      ###QA这里可以改进对obs关键的信息进行特殊强调提取， TODO
         questions = [
-            f"What are the blocks that I can find in the {biome} in Minecraft?",
-            f"What are the items that I can find in the {biome} in Minecraft?",
-            f"What are the mobs that I can find in the {biome} in Minecraft?",
+            # f"What are the blocks that I can find in the {biome} in Minecraft?",
+            # f"What are the items that I can find in the {biome} in Minecraft?",
+            # f"What are the mobs that I can find in the {biome} in Minecraft?",
         ]
-        concepts = [biome, biome, biome]
+        # concepts = [biome, biome, biome]
         messages = [
             self.render_system_message_qa_step1_ask_questions(),
             self.render_human_message_qa_step1_ask_questions(
-                events=events, chest_observation=chest_observation
+                cur_obs=cur_obs
             ),
         ]
         qa_response = self.qa_llm(messages).content
@@ -371,13 +366,13 @@ class CurriculumAgent:
             concepts_new = [pair[1] for pair in pairs]
             assert len(questions_new) == len(concepts_new)
             questions.extend(questions_new)
-            concepts.extend(concepts_new)
+            # concepts.extend(concepts_new)
         except Exception as e:
             print(
                 f"\033[35mError parsing curriculum response for "
                 f"QA step 1 ask questions: {e}.\033[0m"
             )
-        return questions, concepts
+        return questions
 
     def render_system_message_qa_step2_answer_questions(self):
         return SystemMessage(
@@ -386,7 +381,7 @@ class CurriculumAgent:
 
     def render_human_message_qa_step2_answer_questions(self, question):
         content = f"Question: {question}"
-        return HumanMessage(content=content)
+        return UserMessage(content=content)
 
     def run_qa_step2_answer_questions(self, question):
         messages = [
